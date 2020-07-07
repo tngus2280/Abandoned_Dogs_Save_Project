@@ -2,27 +2,245 @@ package user.dog.service.impl;
 
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+
+import admin.dto.DogClaimDTO;
 import user.dog.dao.face.DogDao;
 import user.dog.dao.impl.DogDaoImpl;
 import user.dog.dto.DogDTO;
+import user.dog.dto.Dog_Data;
+import user.dog.dto.Dog_File_DTO;
+import user.dog.dto.UserLike;
 import user.dog.service.face.DogService;
-
-
+import util.Paging;
 
 public class DogServiceImpl implements DogService{
 	
-	//dogDao객체 생성
-	private DogDao dogDao= new DogDaoImpl();
+	//DogDao 객체 생성
+		private DogDao dogDao = new DogDaoImpl();
+		
+		@Override
+		public Paging getPaging(HttpServletRequest req) {
+			
+//			//전달파라미터 curPage를 파싱한다
+//			String param = req.getParameter("curPage");
+//			int curPage = 0;
+//			if( param!=null && !"".equals(param) ) {
+//				curPage = Integer.parseInt(param);
+//			}
+//			
+//			//dog 테이블의 총 데이터 수를 조회한다
+//			int totalCount = dogDao.selectCntAll();
+//
+//			//Paging 객체 생성 - 현재 페이지(curPage), 총 게시글 수(totalCount) 활용
+//			Paging paging = new Paging(totalCount, curPage,6);
+////			Paging paging = new Paging(totalCount, curPage, 6);
+//			
+//			//Paging 객체 반환
+//			return paging;
+			   //전달파라미터 curPage를 파싱한다
+	         String param = req.getParameter("curPage");
+	         int curPage = 0;
+	         if( param!=null && !"".equals(param) ) {
+	            curPage = Integer.parseInt(param);
+	         }
+	         
+	         
+	         
+	         //검색창에 입력한 검색어 - search
+	         String search = req.getParameter("search"); 
+	         
+	         //option의 value값으로 가져온 파라미터 - search2 
+	         param = req.getParameter("search2");
+	         int search2 = 0;
+	         if( param!=null && !"".equals(param) ) {
+	            search2 = Integer.parseInt(param);
+	         }
+	         
+	         
+	         //검색어를 통한 게시글의 총 수를 조회한다 
+	         int totalCount = dogDao.selectCntAll(search, search2 );
+	         
+	         
+	         
+	         
+	         //dog 게시판의 총 게시글 수를 검색어포함으로 조회한다//검색어 이전 콛,
+	         //int totalCount = dogDao.selectCntAll();
 
-	@Override
-	public List<DogDTO> list() {
-	
-	//DOG테이블, DB 조회 결과 얻어오기 - Dao 이용
-	List<DogDTO> dogList= dogDao.selectAll();
-	//결과 반환
-	return dogList;
+	         //Paging 객체 생성 - 현재 페이지(curPage), 총 게시글 수(totalCount) 활용해 paging객체를 생성한다 
+	         Paging paging = new Paging(totalCount, curPage,4);
+//	         Paging paging = new Paging(totalCount, curPage, 6);
+	         
+	         
+	         //검색어와 select로 가져온 value값을 paging객체에 저장한다 
+	         paging.setSearch(search);
+	         paging.setValue(search2);
+	         
+	         //Paging 객체 반환
+	         return paging;
+			
+			
+			
+			
+		}
 
-	}
+		//ok
+		@Override
+		public List<Dog_Data> getList(Paging paging) {
+			return dogDao.selectAll(paging);
+		}
+		
+		
+		@Override
+		public DogDTO getDogno(HttpServletRequest req) {
+			
+			//boardno를 저장할 객체 생성
+			DogDTO dogno = new DogDTO();
+			
+			//boardno 전달파라미터 검증 - null, ""
+			String param = req.getParameter("dogno");
+			if(param!=null && !"".equals(param)) {
+				
+				//boardno 전달파라미터 추출
+				dogno.setDogno( Integer.parseInt(param) );
+			}
+			
+			//결과 객체 반환
+			return dogno;
+		}
 
+
+		@Override
+		public DogDTO view(DogDTO dogno) {
+			//게시글 조회//dogno에 해당하는 객체의 정보만가져옮
+			DogDTO dog= dogDao.selectDogByDogno(dogno); 
+		      
+		     
+		      return dog;
+		}
+
+		@Override
+		public Dog_File_DTO viewFile(DogDTO detailDog) {
+			return dogDao.selectFile(detailDog);
+		}
+
+		@Override
+		public void insertUserLike(HttpServletRequest req) {
+			
+			//userlike정보 저장할 객체
+			UserLike userlike = null;
+			
+			
+			int dogno = dogDao.selectDogno();
+			
+			
+			
+			userlike.setDogno(dogno);
+			
+			
+			dogDao.insertUserLike(userlike);
+		}
+
+		@Override
+		public void insertDogClaim(HttpServletRequest req) {
+			
+			//dogclaim 정보 저장할 객체
+			DogClaimDTO claim = null;
+			
+			int dogno = dogDao.selectDogno();
+			
+			claim.setDogno(dogno);
+			
+			dogDao.insertDogClaim(claim);
+			
+		}
+
+		@Override
+		public void deleteUserLike(UserLike userlike) {
+			dogDao.deleteUserLike(userlike);
+		}
+
+		public void deleteDogClaim(DogClaimDTO dogclaim) {
+			dogDao.deleteDogClaim(dogclaim);
+		}
+
+		@Override
+		public boolean isUserLike(UserLike userlike) {
+			int cnt = dogDao.selectCntUserLike(userlike);
+			
+			if(cnt>0) {// 담아두기했음
+				return true;
+			}else { //담아두지 않았음
+				return false;
+				
+			}
+			
+		}
+
+		@Override
+		public UserLike getUserLike(HttpServletRequest req) {
+			
+			//전달파라미터 파싱
+			int dogno = 0;
+			String param = req.getParameter("dogno");
+			if(param!=null && !"".equals(param)) {
+				dogno = Integer.parseInt(param);
+			}
+			
+			// 로그인한 아이디
+			String userid = (String) req.getSession().getAttribute("userid");
+			
+			UserLike userlike = new UserLike();
+			userlike.setDogno(dogno);
+			userlike.setUserid(userid);
+			
+			
+			return userlike;
+		}
+
+		@Override
+		public boolean UserLike(UserLike userlike) {
+		
+			if(isUserLike(userlike)) {//담아두기한 상태
+				dogDao.deleteUserLike(userlike);
+				
+				return false;
+			} else {//담아두기 하지 않은 상태
+				dogDao.insertUserLike(userlike);
+			}
+			return true;
+			
+		}
+
+		@Override
+		public UserLike selectUserLike(HttpServletRequest req) {
+			UserLike userlike= dogDao.selectUserLike(req); 
+		      
+		     
+			
+			
+			
+			return userlike;
+		}
+
+		@Override
+		public List<UserLike> listUserLike(UserLike userLike) {
+			
+			List<UserLike> userLikeList = dogDao.selectUserList(userLike);
+			
+			
+			return userLikeList;
+		}
+
+//		@Override
+//		public List<UserLike> listUserLike(UserLike userLike) {
+//			return dogDao.listUserLike(userLike);
+//		}
+
+		
+		
+		
+		
+		
 }
 
